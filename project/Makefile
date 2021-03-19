@@ -4,9 +4,11 @@ LINK          := -pthread
 CC 			  := gcc
 
 INCDIRS := framework/include \
+			application/include \
 			driver/include 
 
-SRCDIRS := framework \
+SRCDIRS := framework/sensor \
+			application \
 			driver/bmi088
 
 # 遍历INCDIRS，将各个变量前加-I

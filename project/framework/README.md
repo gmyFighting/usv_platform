@@ -1,1 +1,2 @@
-# 项目架构,线程管理
+# 项目架构组成
+# Logger Sensor_manager INS LED KEY Timer Watchdog...
