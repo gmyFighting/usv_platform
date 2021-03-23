@@ -1,19 +1,41 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h> // file contrl
+#include "sensor_collect.h"
+#include "bmi088.h"
 
 /*
  * sudo ./bmi088_app /dev/bmi088
  * sudo ./hmc5883_app /dev/hmc5883
  */
-
 void* sensor_collect_func(void *arg)
 {
-    int num = arg; /** sizeof(void*) == 8 and sizeof(int) == 4 (64 bits) */
-    
-    while (1) {
-        printf("This is a thread for sensor collect, arg is %d\n", num);
-        sleep(2);// 2s
+    struct sensor_file_addr *fil = (struct sensor_file_addr *)arg; /** sizeof(void*) == 8 and sizeof(int) == 4 (64 bits) */
+    int n = 10;
+    int fd_mems, fd_mag, fd_gps;
+    short mems_buf[6];
+    struct bmi088_data imu_sample;
+    // 打开各个传感器驱动
+    // fil->mems_file = "/dev/bmi088";
+    fd_mems = open(fil->mems_file, O_RDWR);
+    if (fd_mems < 0) {
+		printf("can't open file %s\r\n", fil->mems_file);
+		return;        
     }
+    else {
+        printf("open file sucess:%s \n", fil->mems_file);
+    }
+
+    while (n--) {
+        read(fd_mems, mems_buf, sizeof(mems_buf));
+        bmi088_get_data(mems_buf, &imu_sample);
+        printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
+            imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
+            imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
+        
+        sleep(1);// 1s
+    }
+    close(fd_mems);
     /*退出线程*/
     // pthread_exit(NULL);
 }

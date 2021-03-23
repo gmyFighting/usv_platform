@@ -1,7 +1,7 @@
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 TARGET        ?= usv_plateform
 LINK          := -pthread
-CC 			  := gcc
+CC 			  := $(CROSS_COMPILE)gcc
 
 INCDIRS := framework/include \
 			application/include \
