@@ -11,7 +11,7 @@ struct bmi088_data
     float gyr_z;
 };
 
-int bmi088_get_data(short in[6], struct bmi088_data *out);
+void bmi088_get_data(short in[6], struct bmi088_data *out);
 
 
 

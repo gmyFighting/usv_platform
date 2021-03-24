@@ -9,7 +9,8 @@ INCDIRS := framework/include \
 
 SRCDIRS := framework/sensor \
 			application \
-			driver/bmi088
+			driver/bmi088 \
+			driver/hmc5883
 
 # 遍历INCDIRS，将各个变量前加-I
 INCLUDE         := $(patsubst %, -I %, $(INCDIRS))
