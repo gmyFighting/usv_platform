@@ -1,6 +1,6 @@
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 TARGET        ?= usv_plateform
-LINK          := -pthread
+LINK          := -lrt -pthread 
 CC 			  := $(CROSS_COMPILE)gcc
 
 INCDIRS := framework/include \
@@ -30,8 +30,9 @@ VPATH			:= $(SRCDIRS)
 # 目标 : 依赖文件集合
 # $(TARGET): $(COBJS)
 # 	$(CC) $(LINK) -o $(TARGET) $(OBJS)
+# !$(LINK)要放在命令最后面，否则有时会出现链接不到库的问题
 $(TARGET): $(COBJS)
-	$(CC) $(LINK) -o obj/$(TARGET) $(COBJS)
+	$(CC) -o obj/$(TARGET) $(COBJS) $(LINK)
 $(COBJS): obj/%.o : %.c
 	$(CC) -c $(INCLUDE) -o $@ $<
 
