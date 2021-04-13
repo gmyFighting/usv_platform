@@ -8,26 +8,60 @@
 #include "bmi088.h"
 #include "hmc5883.h"
 
+#define INS_PERIOD 1
+#define MAG_PERIOD 1
+#define GPS_PERIOD 2
+
 static sem_t sensor_sem;
+static int fd_mems, fd_mag, fd_gps;
+static unsigned int ins_cnt = INS_PERIOD;
+static unsigned int mag_cnt = MAG_PERIOD;
+static unsigned int gps_cnt = GPS_PERIOD;
 
 void sig_handler(int sig_num)
 {
     if (sig_num == SIGUSR1) {
-        printf("Capture sign No.=SIGUSR1\n"); 
+        // printf("Capture sign No.=SIGUSR1\n"); 
         // 发送信号量
         sem_post(&sensor_sem);
     } 
+}
+
+void sensor_loop(void)
+{
+    short mems_buf[6];
+    short mag_buf[3];
+    struct bmi088_data imu_sample;
+    struct hmc5883_data mag_sample;
+
+    if (ins_cnt >= INS_PERIOD) {
+        ins_cnt = 0;
+        read(fd_mems, mems_buf, sizeof(mems_buf));
+        bmi088_get_data(mems_buf, &imu_sample);
+        printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
+            imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
+            imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
+    }
+    if (mag_cnt >= MAG_PERIOD) {
+        mag_cnt = 0;
+        read(fd_mag, mag_buf, sizeof(mag_buf));
+        hmc5883_get_data(mag_buf, &mag_sample);
+        printf("mx=%f, my=%f, mz=%f\r\n", \
+            mag_sample.x, mag_sample.y, mag_sample.z);
+    }
+    if (gps_cnt >= GPS_PERIOD) {
+        gps_cnt = 0;
+    }
+
+    ins_cnt++;
+    mag_cnt++;
+    gps_cnt++;
 }
 
 void* sensor_collect_func(void *arg)
 {
     struct sensor_file_addr *fil = (struct sensor_file_addr *)arg; 
     int n = 10;
-    int fd_mems, fd_mag, fd_gps;
-    short mems_buf[6];
-    short mag_buf[3];
-    struct bmi088_data imu_sample;
-    struct hmc5883_data mag_sample;
     // 创建定时器
     timer_t timer;
     // 异步通知
@@ -76,16 +110,7 @@ void* sensor_collect_func(void *arg)
 
     while (n--) {
         if (sem_wait(&sensor_sem) == 0) {
-            read(fd_mems, mems_buf, sizeof(mems_buf));
-            bmi088_get_data(mems_buf, &imu_sample);
-            printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
-                imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
-                imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
-            
-            read(fd_mag, mag_buf, sizeof(mag_buf));
-            hmc5883_get_data(mag_buf, &mag_sample);
-            printf("mx=%f, my=%f, mz=%f\r\n", \
-                mag_sample.x, mag_sample.y, mag_sample.z);
+            sensor_loop();
         }
     }
     close(fd_mems);
