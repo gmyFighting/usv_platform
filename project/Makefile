@@ -8,6 +8,7 @@ INCDIRS := framework/include \
 			driver/include 
 
 SRCDIRS := framework/sensor \
+			framework/uDEU \
 			application \
 			driver/bmi088 \
 			driver/hmc5883

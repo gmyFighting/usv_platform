@@ -115,7 +115,7 @@ void* sensor_collect_func(void *arg)
     }
     close(fd_mems);
     close(fd_mag);
-    return NULL;
+    return (void *)0;
     /*退出线程*/
     // pthread_exit(NULL);
 }
