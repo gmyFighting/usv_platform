@@ -15,3 +15,6 @@
 
 ### 2021/4/20
 ### 添加uDEU.c 修改相应makefile
+
+### 2021/4/1
+### 完善uDEU中基本操作函数, DEFINE,publish,subscribe,advertise
