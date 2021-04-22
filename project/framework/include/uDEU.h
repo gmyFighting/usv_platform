@@ -6,9 +6,9 @@
 #define DEU_MAX_LINK_NUM 20
 // #字符串化 ##将宏参数连接
 #define DEU_DEFINE(_name, _size) \
-    struct deu_topic = {         \
+    struct deu_topic _name= {    \
         .name = #_name,          \
-        .size = #_size,          \
+        .size = _size,          \
     }                            
 // 节点
 struct deu_node {
@@ -43,6 +43,7 @@ typedef struct topic_list *TopicList_t;
 int deu_advertise(DeuTopic_t tpc);
 DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t sem, void (*cb)(void *parameter));
 int deu_publish(DeuTopic_t tpc, const void* data);
+int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf);
 
 #endif // !_UDEU_H_
 

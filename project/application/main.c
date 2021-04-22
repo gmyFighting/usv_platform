@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         printf("create thread success\n");
     }
     
-    printf("main thread start exit\n");
+    // printf("main thread start exit\n");
     /* 主线程具有进程行为，return后进程也会结束，进程下的所有线程都会结束
      * 使用pthread_exit后，主线程退出不会引起其创建子线程的退出
      */

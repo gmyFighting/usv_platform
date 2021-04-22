@@ -7,6 +7,7 @@
 #include "sensor_collect.h"
 #include "bmi088.h"
 #include "hmc5883.h"
+#include "uDEU.h"
 
 #define INS_PERIOD 1
 #define MAG_PERIOD 1
@@ -27,20 +28,19 @@ void sig_handler(int sig_num)
     } 
 }
 
-void sensor_loop(void)
+void sensor_loop(DeuTopic_t top, DeuNode_t node)
 {
     short mems_buf[6];
     short mag_buf[3];
-    struct bmi088_data imu_sample;
+    struct bmi088_data imu_sample, imu_sample1;
     struct hmc5883_data mag_sample;
+    int res;
 
     if (ins_cnt >= INS_PERIOD) {
         ins_cnt = 0;
         read(fd_mems, mems_buf, sizeof(mems_buf));
         bmi088_get_data(mems_buf, &imu_sample);
-        printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
-            imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
-            imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
+        deu_publish(top, &imu_sample);
     }
     if (mag_cnt >= MAG_PERIOD) {
         mag_cnt = 0;
@@ -53,6 +53,10 @@ void sensor_loop(void)
         gps_cnt = 0;
     }
 
+    res = deu_poll_sync(top, node, &imu_sample1);
+    printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
+        imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
+        imu_sample1.gyr_x, imu_sample1.gyr_y, imu_sample1.gyr_z);
     ins_cnt++;
     mag_cnt++;
     gps_cnt++;
@@ -68,6 +72,8 @@ void* sensor_collect_func(void *arg)
     struct sigevent evp;
     // 定时器
     struct itimerspec ts;
+    int res = 0;
+
     evp.sigev_notify = SIGEV_SIGNAL;// 通知方法:指定时器到期时会产生信号  
     evp.sigev_signo = SIGUSR1;// 通知信号类型  
     evp.sigev_value.sival_ptr = &timer;// 发出信号的定时器,用于多个定时器发同一信号
@@ -98,7 +104,25 @@ void* sensor_collect_func(void *arg)
     else {
         printf("open file sucess:%s \n", fil->mag_file);
     }
-    
+
+    // uDEU
+    DEU_DEFINE(imu, sizeof(struct bmi088_data));
+    sem_t imu_sem;
+    DeuNode_t imu_node = NULL;
+    res = deu_advertise(&imu);
+    if (res < 0) {
+        printf("deu_advertise failed\n");
+        return (void *)(-1);
+    }
+
+    res = sem_init(&imu_sem, 0, 0);
+
+    imu_node = deu_subscribe(&imu, imu_sem, NULL);
+    if (imu_node == NULL) {
+        printf("deu_subscribe failed\n");
+        return (void *)(-1);        
+    }
+
     ts.it_interval.tv_sec = 1; // the spacing time  
     ts.it_interval.tv_nsec = 0;  
     ts.it_value.tv_sec = 1;  // the delay time start
@@ -110,7 +134,7 @@ void* sensor_collect_func(void *arg)
 
     while (n--) {
         if (sem_wait(&sensor_sem) == 0) {
-            sensor_loop();
+            sensor_loop(&imu, imu_node);
         }
     }
     close(fd_mems);

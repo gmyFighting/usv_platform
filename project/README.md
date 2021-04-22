@@ -16,5 +16,9 @@
 ### 2021/4/20
 ### 添加uDEU.c 修改相应makefile
 
-### 2021/4/1
+### 2021/4/21
 ### 完善uDEU中基本操作函数, DEFINE,publish,subscribe,advertise
+
+### 2021/4/22
+### DEFINE,publish,subscribe,advertise单一节点测试,不满足条件未测试
+### 修改DEFINE中错误,修改NULL指针判断,增加断言assert等
