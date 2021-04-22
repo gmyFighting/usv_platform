@@ -17,7 +17,7 @@ int deu_advertise(DeuTopic_t tpc)
     assert(tpc != NULL);
     
     // 查看话题名是否重名
-    // pthread_mutex_lock();
+    pthread_mutex_lock(&deu_mutex);//保证在某一时刻只有一个线程能访问关键数据
     TopicList_t cp = &_Topic_List;// 用于操作链表指针
     while (cp->next) {
         if (strcmp(cp->tpc_t->name, tpc->name) == 0){
@@ -26,6 +26,7 @@ int deu_advertise(DeuTopic_t tpc)
         } 
         cp = cp->next;/* find last node */
     }
+    pthread_mutex_unlock(&deu_mutex);
 
     // 创建话题 原子操作
     tpc->data = calloc(tpc->size, 1);
@@ -36,7 +37,7 @@ int deu_advertise(DeuTopic_t tpc)
 
     // 将话题添加到话题列表全局变量中
     /* update Mcn List */
-
+    pthread_mutex_lock(&deu_mutex);
     if (cp->tpc_t != NULL) {// 这个if是不是无意义
         cp->next = (TopicList_t)malloc(sizeof(TopicList));
 
@@ -50,6 +51,7 @@ int deu_advertise(DeuTopic_t tpc)
 
     cp->tpc_t = tpc;
     cp->next = NULL;
+    pthread_mutex_unlock(&deu_mutex);
     //exit atomix
 
     return 0;
@@ -79,7 +81,7 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
     node->sem = sem;
     node->cb = cb;
 
-    // MCN_ENTER_CRITICAL;// 临界段保护hub
+    pthread_mutex_lock(&deu_mutex);
     /* no node link yet */
     if (tpc->link_tail == NULL) {
         printf("no node link yet\n");
@@ -92,7 +94,7 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
     }
     tpc->link_size++;
     printf("tpc->link_size = %d\n", tpc->link_size);
-    //退出临界段
+    pthread_mutex_unlock(&deu_mutex);
 
     if ((tpc->published == 1) && (node->cb != NULL)) {
         /* 若当前该话题已经有节点发布，则立即执行回调函数 */
@@ -112,7 +114,8 @@ int deu_publish(DeuTopic_t tpc, const void* data)
     assert(tpc->data != NULL);
 
     int sem_val = 0;
-    // MCN_ENTER_CRITICAL原子操作
+
+    pthread_mutex_lock(&deu_mutex);
     // 更新话题下data
     memcpy(tpc->data, data, tpc->size);
     /* 遍历话题下节点 */
@@ -135,7 +138,7 @@ int deu_publish(DeuTopic_t tpc, const void* data)
     }
     printf("deu_publish\n");
     tpc->published = 1;
-    // MCN_EXIT_CRITICAL;
+    pthread_mutex_unlock(&deu_mutex);
 
     /* 执行回调函数 */
     node = tpc->link_head;
@@ -167,8 +170,10 @@ int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf)
     }
 
     if (sem_wait(node->sem) == 0) {
+        pthread_mutex_lock(&deu_mutex);
         memcpy(buf, top->data, top->size);
         node->renewal = 0;
+        pthread_mutex_unlock(&deu_mutex);
     }
 
     return 0;
@@ -177,11 +182,15 @@ int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf)
 int deu_poll(DeuTopic_t top, DeuNode_t node, void * buf)
 {
     // 临界段?
+    pthread_mutex_lock(&deu_mutex);
     char renewal = node->renewal; 
+    pthread_mutex_unlock(&deu_mutex);
     // 临界段exit
     if (renewal == 1) {
+        pthread_mutex_lock(&deu_mutex);
         memcpy(buf, top->data, top->size);
         node->renewal = 0;
+        pthread_mutex_unlock(&deu_mutex);
         return 0;
     }
     else {
