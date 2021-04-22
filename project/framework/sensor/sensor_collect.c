@@ -53,7 +53,7 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
     if (gps_cnt >= GPS_PERIOD) {
         gps_cnt = 0;
     }
-    sem_getvalue(&node->sem, &sem_val);
+    sem_getvalue(node->sem, &sem_val);
     printf("sem_val = %d\n", sem_val);
     res = deu_poll_sync(top, node, &imu_sample1);
     printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
@@ -119,7 +119,7 @@ void* sensor_collect_func(void *arg)
 
     res = sem_init(&imu_sem, 0, 0);
 
-    imu_node = deu_subscribe(&imu, imu_sem, NULL);
+    imu_node = deu_subscribe(&imu, &imu_sem, NULL);
     if (imu_node == NULL) {
         printf("deu_subscribe failed\n");
         return (void *)(-1);        

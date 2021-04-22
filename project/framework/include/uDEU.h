@@ -13,7 +13,7 @@
 // 节点
 struct deu_node {
     volatile char renewal;// 话题有新数据节点未读取
-    sem_t sem;// 长整形union
+    sem_t *sem;// 长整形union
     void (*cb)(void *parameter);
     struct deu_node * next;
 };
@@ -41,9 +41,10 @@ typedef struct topic_list TopicList;
 typedef struct topic_list *TopicList_t;
 
 int deu_advertise(DeuTopic_t tpc);
-DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t sem, void (*cb)(void *parameter));
+DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter));
 int deu_publish(DeuTopic_t tpc, const void* data);
 int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf);
+int deu_poll(DeuTopic_t top, DeuNode_t node, void * buf);
 
 #endif // !_UDEU_H_
 

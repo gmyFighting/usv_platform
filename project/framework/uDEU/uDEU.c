@@ -55,7 +55,7 @@ int deu_advertise(DeuTopic_t tpc)
     return 0;
 }
 
-DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t sem, void (*cb)(void *parameter))
+DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
 {
     printf("deu_subscribe start\n");
     assert(tpc != NULL);
@@ -123,12 +123,12 @@ int deu_publish(DeuTopic_t tpc, const void* data)
         /* 更新节点读取新消息标志位 */
         node->renewal = 1;
         /* send out event to wakeup waiting task */
-        if (&node->sem != NULL) {
+        if (node->sem != NULL) {
         //     /* stimulate as mutex */
-            sem_getvalue(&node->sem, &sem_val);
+            sem_getvalue(node->sem, &sem_val);
             if (sem_val == 0)
                 printf("sem_post\n");
-                sem_post(&node->sem);
+                sem_post(node->sem);
         }
 
         node = node->next;
@@ -166,12 +166,27 @@ int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf)
         return -1;
     }
 
-    if (sem_wait(&node->sem) == 0) {
+    if (sem_wait(node->sem) == 0) {
         memcpy(buf, top->data, top->size);
         node->renewal = 0;
     }
 
     return 0;
+}
+
+int deu_poll(DeuTopic_t top, DeuNode_t node, void * buf)
+{
+    // 临界段?
+    char renewal = node->renewal; 
+    // 临界段exit
+    if (renewal == 1) {
+        memcpy(buf, top->data, top->size);
+        node->renewal = 0;
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 
