@@ -123,13 +123,13 @@ int deu_publish(DeuTopic_t tpc, const void* data)
         /* 更新节点读取新消息标志位 */
         node->renewal = 1;
         /* send out event to wakeup waiting task */
-        // if (node->sem != 0) {
+        if (&node->sem != NULL) {
         //     /* stimulate as mutex */
-        //     sem_getvalue(&node->sem, &sem_val);
-        //     if (sem_val == 0)
+            sem_getvalue(&node->sem, &sem_val);
+            if (sem_val == 0)
                 printf("sem_post\n");
                 sem_post(&node->sem);
-        // }
+        }
 
         node = node->next;
     }
