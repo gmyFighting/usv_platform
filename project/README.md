@@ -23,3 +23,7 @@
 ### DEFINE,publish,subscribe,advertise单一节点测试,不满足条件未测试
 ### 修改DEFINE中错误,修改NULL指针判断,增加断言assert
 ### 添加互斥量设计临界段保护多线程涉及到的公共变量(代测试)
+
+### 2021/4/27
+### 添加ringbuffer
+

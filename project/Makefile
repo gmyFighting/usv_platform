@@ -3,15 +3,16 @@ TARGET        ?= usv_plateform
 LINK          := -lrt -pthread 
 CC 			  := $(CROSS_COMPILE)gcc
 
-INCDIRS := framework/include \
-			application/include \
+INCDIRS := framework/include     \
+			application/include  \
 			driver/include 
 
-SRCDIRS := framework/sensor \
-			framework/uDEU \
-			application \
-			driver/bmi088 \
-			driver/hmc5883
+SRCDIRS := framework/sensor      \
+			framework/uDEU       \
+			framework/ringbuffer \
+			application          \
+			driver/bmi088        \
+			driver/hmc5883 
 
 # 遍历INCDIRS，将各个变量前加-I
 INCLUDE         := $(patsubst %, -I %, $(INCDIRS))
