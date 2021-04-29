@@ -12,7 +12,8 @@ SRCDIRS := framework/sensor      \
 			framework/ringbuffer \
 			application          \
 			driver/bmi088        \
-			driver/hmc5883 
+			driver/hmc5883       \
+			driver/fog_imu040b
 
 # 遍历INCDIRS，将各个变量前加-I
 INCLUDE         := $(patsubst %, -I %, $(INCDIRS))

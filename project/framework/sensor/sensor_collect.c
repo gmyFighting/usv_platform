@@ -13,11 +13,13 @@
 #define MAG_PERIOD 1
 #define GPS_PERIOD 2
 
-static sem_t sensor_sem;
+static sem_t sensor_sem;// 需要静态全局吗？
 static int fd_mems, fd_mag, fd_gps;
 static unsigned int ins_cnt = INS_PERIOD;
 static unsigned int mag_cnt = MAG_PERIOD;
 static unsigned int gps_cnt = GPS_PERIOD;
+
+DEU_DEFINE(imu, sizeof(struct bmi088_data));
 
 void sig_handler(int sig_num)
 {
@@ -41,20 +43,22 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
         ins_cnt = 0;
         read(fd_mems, mems_buf, sizeof(mems_buf));
         bmi088_get_data(mems_buf, &imu_sample);
+
         deu_publish(top, &imu_sample);
     }
+
     if (mag_cnt >= MAG_PERIOD) {
         mag_cnt = 0;
         read(fd_mag, mag_buf, sizeof(mag_buf));
         hmc5883_get_data(mag_buf, &mag_sample);
-        printf("mx=%f, my=%f, mz=%f\r\n", \
-            mag_sample.x, mag_sample.y, mag_sample.z);
+        // printf("mx=%f, my=%f, mz=%f\r\n", \
+        //     mag_sample.x, mag_sample.y, mag_sample.z);
     }
+
     if (gps_cnt >= GPS_PERIOD) {
         gps_cnt = 0;
     }
-    sem_getvalue(node->sem, &sem_val);
-    printf("sem_val = %d\n", sem_val);
+
     res = deu_poll_sync(top, node, &imu_sample1);
     printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
         imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
@@ -66,6 +70,8 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
 
 void* sensor_collect_func(void *arg)
 {
+    // 该线程最先执行，以保证注册所有传感器话题
+    printf("in sensor_collect_func\n");
     struct sensor_file_addr *fil = (struct sensor_file_addr *)arg; 
     int n = 10;
     // 创建定时器
@@ -94,21 +100,14 @@ void* sensor_collect_func(void *arg)
 		printf("can't open file %s\r\n", fil->mems_file);
 		return NULL;        
     }
-    else {
-        printf("open file sucess:%s \n", fil->mems_file);
-    }
 
     fd_mag = open(fil->mag_file, O_RDWR);
     if (fd_mag < 0) {
         printf("can't open file %s\r\n", fil->mag_file);
         return NULL;
     }
-    else {
-        printf("open file sucess:%s \n", fil->mag_file);
-    }
 
     // uDEU
-    DEU_DEFINE(imu, sizeof(struct bmi088_data));
     sem_t imu_sem;
     DeuNode_t imu_node = NULL;
     res = deu_advertise(&imu);
@@ -135,10 +134,16 @@ void* sensor_collect_func(void *arg)
     } 
 
     while (n--) {
-        if (sem_wait(&sensor_sem) == 0) {
+        // printf("in sensor_collect_func while\n");
+        // 等待定时器发的信号量
+        if (sem_wait(&sensor_sem) == 0) {// 在等待信号量过程中发生阻塞跳转到其他线程
+            // printf("in sensor_loop\n");
             sensor_loop(&imu, imu_node);
+            // printf("out sensor_loop\n");
         }
+        // printf("out sensor_collect_func while\n");
     }
+    // printf("out sensor_collect_func\n");
     close(fd_mems);
     close(fd_mag);
     return (void *)0;

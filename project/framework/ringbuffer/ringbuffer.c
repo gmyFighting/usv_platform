@@ -28,7 +28,7 @@ void ringbuffer_init(struct ringbuffer *rb,
 
     /* set buffer pool and size */
     rb->buffer_ptr = pool;
-    rb->buffer_size = size;//测一下struct大小,看看是否要对齐
+    rb->buffer_size = size;// 测一下struct大小,看看是否要对齐
 }
 
 /**

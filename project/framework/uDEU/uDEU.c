@@ -59,7 +59,6 @@ int deu_advertise(DeuTopic_t tpc)
 
 DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
 {
-    printf("deu_subscribe start\n");
     assert(tpc != NULL);
 
     if (tpc->link_size >= DEU_MAX_LINK_NUM) {// 最多30个节点订阅该话题
@@ -73,9 +72,7 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
         printf("deu create node fail!\n");
         return NULL;
     }
-    else {
-        printf("create node success!\n");
-    }
+
 	// 初始化节点
     node->renewal = 0;
     node->sem = sem;
@@ -84,7 +81,6 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
     pthread_mutex_lock(&deu_mutex);
     /* no node link yet */
     if (tpc->link_tail == NULL) {
-        printf("no node link yet\n");
         tpc->link_head = tpc->link_tail = node;
     } else {// 尾节点又用吗？？？？
         // 更新原尾节点的next
@@ -93,7 +89,6 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
         tpc->link_tail = node;      
     }
     tpc->link_size++;
-    printf("tpc->link_size = %d\n", tpc->link_size);
     pthread_mutex_unlock(&deu_mutex);
 
     if ((tpc->published == 1) && (node->cb != NULL)) {
@@ -107,9 +102,7 @@ DeuNode_t deu_subscribe(DeuTopic_t tpc, sem_t *sem, void (*cb)(void *parameter))
 int deu_publish(DeuTopic_t tpc, const void* data)
 {
     assert(tpc != NULL);    
-
     assert(data != NULL);
-
     // 该话题还未advertised，即未分配空间
     assert(tpc->data != NULL);
 
@@ -125,18 +118,17 @@ int deu_publish(DeuTopic_t tpc, const void* data)
     while (node != NULL) {
         /* 更新节点读取新消息标志位 */
         node->renewal = 1;
-        /* send out event to wakeup waiting task */
+        
         if (node->sem != NULL) {
-        //     /* stimulate as mutex */
             sem_getvalue(node->sem, &sem_val);
-            if (sem_val == 0)
-                printf("sem_post\n");
+            if (sem_val == 0) {
                 sem_post(node->sem);
+            }
         }
 
         node = node->next;
     }
-    printf("deu_publish\n");
+
     tpc->published = 1;
     pthread_mutex_unlock(&deu_mutex);
 
@@ -160,22 +152,24 @@ int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf)
     assert(top != NULL);
     assert(node != NULL);
     assert(buf != NULL);
- 
-    if (top->data == NULL) {
-        return -1;
-    }
+    assert(top->data != NULL);
+    // int sem_val;
+    // printf("in deu_poll_sync\n");
+    // if (!top->published) {
+    //     return -1;
+    // }
+    // sem_getvalue(node->sem, &sem_val);
+    // printf("deu_poll_sync,sem_val=%d\n", sem_val);
+    // printf("sem_wait\n");
+    sem_wait(node->sem);
+    // sem_getvalue(node->sem, &sem_val);
+    // printf("deu_poll_sync,sem_val=%d\n", sem_val);
+    pthread_mutex_lock(&deu_mutex);
+    memcpy(buf, top->data, top->size);
+    node->renewal = 0;
+    pthread_mutex_unlock(&deu_mutex);
 
-    if (!top->published) {
-        return -1;
-    }
-
-    if (sem_wait(node->sem) == 0) {
-        pthread_mutex_lock(&deu_mutex);
-        memcpy(buf, top->data, top->size);
-        node->renewal = 0;
-        pthread_mutex_unlock(&deu_mutex);
-    }
-
+    printf("out deu_poll_sync\n");
     return 0;
 }
 

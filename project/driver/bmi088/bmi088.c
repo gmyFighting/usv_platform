@@ -10,6 +10,3 @@ void bmi088_get_data(short in[6], struct bmi088_data *out)
     out->gyr_y = ((float)in[4]) /32768.0f * 6 * GRAV;
     out->gyr_z = ((float)in[5]) /32768.0f * 6 * GRAV;  
 }
-
-
-

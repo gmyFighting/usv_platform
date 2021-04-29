@@ -5,6 +5,13 @@
 #include <stddef.h>// NULL
 
 /* ring buffer */
+/*
+ * 内存分配: 
+ * char * 4byte
+ * short  2byte
+ * short  2byte
+ * short  4byte
+ */
 struct ringbuffer
 {
     unsigned char *buffer_ptr;
