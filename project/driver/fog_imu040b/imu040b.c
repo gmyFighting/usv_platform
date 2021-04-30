@@ -1,4 +1,5 @@
 
+#pragma pack(1)
 typedef struct {
     signed int gyro_x;
     signed int gyro_y;
@@ -41,3 +42,4 @@ typedef union {
     imu040b_nav_payload_t    imu040b_data;
     char                     buf_raw[92];
 } imu040b_nav_buf_t;
+#pragma pack()

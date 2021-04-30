@@ -10,6 +10,7 @@ INCDIRS := framework/include     \
 SRCDIRS := framework/sensor      \
 			framework/uDEU       \
 			framework/ringbuffer \
+			framework/uart       \
 			application          \
 			driver/bmi088        \
 			driver/hmc5883       \
