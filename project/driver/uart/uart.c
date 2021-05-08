@@ -63,8 +63,7 @@ void uart_close(int fd)
 *出口参数： 正确返回为1，错误返回为0
 *******************************************************************/
 int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity)
-{
-    
+{ 
     int i;
     // int status;
     int speed_arr[] = { B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300,
@@ -238,7 +237,7 @@ int uart_recv(int fd, char *rcv_buf,int data_len)
 * data_len :一帧数据的个数
 * 出口参数： 正确返回为1，错误返回为0
 *******************************************************************/
-int uart_send_char(int fd, char *send_buf,int data_len)
+int uart_send(int fd, char *send_buf,int data_len)
 {
     int ret;
     

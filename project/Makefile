@@ -10,11 +10,11 @@ INCDIRS := framework/include     \
 SRCDIRS := framework/sensor      \
 			framework/uDEU       \
 			framework/ringbuffer \
-			framework/uart       \
 			application          \
 			driver/bmi088        \
 			driver/hmc5883       \
-			driver/fog_imu040b
+			driver/fog_imu040b	 \
+			driver/uart        
 
 # 遍历INCDIRS，将各个变量前加-I
 INCLUDE         := $(patsubst %, -I %, $(INCDIRS))
