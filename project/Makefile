@@ -7,13 +7,13 @@ INCDIRS := framework/include     \
 			application/include  \
 			driver/include 
 
-SRCDIRS := framework/sensor      \
-			framework/uDEU       \
-			framework/ringbuffer \
-			application          \
-			driver/bmi088        \
-			driver/hmc5883       \
-			driver/fog_imu040b	 \
+SRCDIRS := framework/sensor          \
+			framework/uDEU           \
+			framework/ringbuffer     \
+			framework/fog_imu040b	 \
+			application              \
+			driver/bmi088            \
+			driver/hmc5883           \
 			driver/uart        
 
 # 遍历INCDIRS，将各个变量前加-I

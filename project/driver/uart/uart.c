@@ -1,16 +1,16 @@
 /*******************************
  *linux串口驱动设置函数文件
  **********************************/
-#include<stdio.h>
-#include<stdlib.h>
-#include<unistd.h>
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<termios.h>
-#include<errno.h>
-#include<string.h>
-#include<uart.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <errno.h>
+#include <string.h>
+#include <uart.h>
 
 #define FALSE -1
 #define TRUE 0
@@ -23,7 +23,7 @@
 *****************************************************************/
 int uart_open(int fd, char* port)
 {
-    fd = open( port, O_RDWR|O_NOCTTY);
+    fd = open(port, O_RDWR|O_NOCTTY);
     if (FALSE == fd) {
         perror("Can't Open Serial Port");
         return(FALSE);
