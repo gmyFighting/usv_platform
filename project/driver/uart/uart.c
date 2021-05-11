@@ -250,4 +250,3 @@ int uart_send(int fd, char *send_buf,int data_len)
         return FALSE;  
     } 
 }
-
