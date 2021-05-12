@@ -21,32 +21,35 @@ static const char TRUE = 0;
 * 入口参数： fd :文件描述符 port :串口号(ttyUSB0,ttymxc1,ttymxc2)
 * 出口参数： 正确返回为0，错误返回为-1
 *****************************************************************/
-int uart_open(int *fd, char* port)
+int uart_open(int fd, char* port)
 {
+    int res;
     // 返回最小的未被使用的描述符(后续操作都基于该描述符)
-    // O_NOCTTY不把该设备作为终端设备 
-    // O_NONBLOCK/O_NDELAY非阻塞方式读取 
-    fd = open(port, O_RDWR|O_NOCTTY|O_NONBLOCK);
+    // O_NOCTTY不把该设备作为终端设备，程序不会成为这个端口的控制终端。
+    // O_NONBLOCK/O_NDELAY非阻塞方式读取，不关心端口另一端状态
+    // flag都是用八进制表示
+    // bugs:O_NOCTTY加上flag没变化加上flag没变化,好像和串口是终端有关
+    fd = open(port, O_RDWR|O_NONBLOCK);
     if (fd == FALSE) {
         perror("Can't Open Serial Port");
         return(FALSE);
     }
+
+    // int flag = fcntl(fd, F_GETFL, 0);
+    // flag |= O_NONBLOCK;
+    // res = fcntl(fd, F_SETFL, flag);
+    // if (res < 0) {
+    //     printf("fcntl failed:%d\n", res);
+    // }
     
-    //判断串口的状态是否为阻塞状态
-    if (fcntl(fd, F_SETFL, 0) < 0) {
-        printf("fcntl failed!\n");
+    //测试是否为终端设备 1是终端 0不是终端
+    if (isatty(fd) == 0) {
+        printf("tty is not a terminal device\n");
         return(FALSE);
-    } else {
-        //    printf("fcntl=%d\n",fcntl(fd, F_SETFL,0));
     }
     
-    //测试是否为终端设备
-    if (0 == isatty(STDIN_FILENO)) {
-        printf("standard input is not a terminal device\n");
-        return(FALSE);
-    }
     printf("uart:%s open\n",port);
-    return fd;
+    return 0;
 }
 
 void uart_close(int fd)
