@@ -14,4 +14,6 @@ struct imu040_frame {
     float az;
 };
 
+int imu040_parse_char(char ch);
+
 #endif

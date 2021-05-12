@@ -1,7 +1,7 @@
 /*******************************
  *linux串口驱动设置函数文件
  **********************************/
-#include <stdio.h>
+#include <stdio.h>// perror
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -12,19 +12,22 @@
 #include <string.h>
 #include <uart.h>
 
-#define FALSE -1
-#define TRUE 0
+static const char FALSE = -1;
+static const char TRUE = 0;
 
 /*****************************************************************
-* 名称： UART0_Open
+* 名称： UART_Open
 * 功能： 打开串口并返回串口设备文件描述
-* 入口参数： fd :文件描述符 port :串口号(ttyS0,ttyS1,ttyS2)
+* 入口参数： fd :文件描述符 port :串口号(ttyUSB0,ttymxc1,ttymxc2)
 * 出口参数： 正确返回为0，错误返回为-1
 *****************************************************************/
-int uart_open(int fd, char* port)
+int uart_open(int *fd, char* port)
 {
-    fd = open(port, O_RDWR|O_NOCTTY);
-    if (FALSE == fd) {
+    // 返回最小的未被使用的描述符(后续操作都基于该描述符)
+    // O_NOCTTY不把该设备作为终端设备 
+    // O_NONBLOCK/O_NDELAY非阻塞方式读取 
+    fd = open(port, O_RDWR|O_NOCTTY|O_NONBLOCK);
+    if (fd == FALSE) {
         perror("Can't Open Serial Port");
         return(FALSE);
     }
@@ -42,7 +45,7 @@ int uart_open(int fd, char* port)
         printf("standard input is not a terminal device\n");
         return(FALSE);
     }
-    printf("==================uart open==============\n");
+    printf("uart:%s open\n",port);
     return fd;
 }
 

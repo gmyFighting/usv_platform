@@ -24,11 +24,11 @@ int main(int argc, char **argv)
 {
     int res;
     
-    res = pthread_create(&sensor_collect_thread, NULL, sensor_collect_func, (void*)(&sensor_addr));
-    if (res) {
-        printf("create sensor thread fail\n");
-        exit(res);// 退出进程
-    }
+    // res = pthread_create(&sensor_collect_thread, NULL, sensor_collect_func, (void*)(&sensor_addr));
+    // if (res) {
+    //     printf("create sensor thread fail\n");
+    //     exit(res);// 退出进程
+    // }
 
     res = pthread_create(&test_thread, NULL, user_test_func, NULL);
     if (res) {

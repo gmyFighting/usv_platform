@@ -1,7 +1,7 @@
 #include "imu040b.h"
 
 // 帧头(2)+PAYLOAD+CheckSum(2)
-static enum prot {
+static enum {
     IMU040_HEADER1 = 0,
     IMU040_HEADER2,
     IMU040_STATE,
@@ -9,7 +9,7 @@ static enum prot {
     IMU040_IDX,
     IMU040_CHECK_SUM,
     IMU040_TAIL
-};
+} prot;
 
 static unsigned char _parse_state = 0;
 static unsigned char _ck_sum = 0;
