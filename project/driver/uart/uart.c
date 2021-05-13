@@ -206,7 +206,7 @@ int uart_init(int fd, int speed,int flow_ctrl, int databits,int stopbits,char pa
  * data_len :一帧数据的长度
  * 出口参数： 正确返回为0，错误返回为-1
  */
-int uart_recv(int fd, char *rcv_buf,int data_len)
+int uart_recv(int fd, char *rcv_buf, int data_len)
 {
     int len,fs_sel;
     fd_set fs_read;
@@ -221,10 +221,10 @@ int uart_recv(int fd, char *rcv_buf,int data_len)
     
     //使用select实现串口的多路通信
     fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);
-	printf("fs_sel = %d\n",fs_sel);
+	//printf("fs_sel = %d\n",fs_sel);
     if(fs_sel) {
         len = read(fd,rcv_buf,data_len);
-        printf("have readen!\n");
+        // printf("have readen!\n");
         
         return len;
     } else {

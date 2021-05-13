@@ -12,9 +12,10 @@ extern struct deu_topic imu;
 
 void* user_test_func(void *arg)
 {
+    char rcv_buf = 0;
     printf("in user_test_func\n");
     sleep(1);// 跳转到其他线程
-    int n = 10;
+    int n = 200;
     int fd = 0;
     int res;
     char *imu_name = "/dev/ttyUSB0";
@@ -42,17 +43,22 @@ void* user_test_func(void *arg)
     if (res != 0) {
         printf("uart set failed\n");
     }
-    uart_close(fd);
+    // uart_close(fd);
     
-    // while (n--) {
-    //     printf("in user_test_func while\n");
+    while (1) {
+        res = 0;
+        res = uart_recv(fd, &rcv_buf, 1);
+        if (res > 0) {
+            printf("%x ", rcv_buf);
+        }
+            
     //     // if(deu_poll_sync(&imu, user_node, &imu_sample) == 0) {
     //     //     printf("test:ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
     //     //         imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
     //     //         imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
     //     //     // printf("out user_test_func while\n");
     //     // }
-    // }
+    }
     printf("out user_test_func\n");
     return (void *)0;
 }
