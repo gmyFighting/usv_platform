@@ -33,18 +33,26 @@ void* user_test_func(void *arg)
     // }
 
     // test uart
-    res = uart_open(fd, imu_name);
+    res = uart_open(&fd, imu_name);
+    if (res != 0) {
+        printf("uart open failed\n");
+    }
+    printf("fd = %d\n", fd);
+    res = uart_set(fd, B921600, 0, 8, 1, 'E');
+    if (res != 0) {
+        printf("uart set failed\n");
+    }
     uart_close(fd);
     
-    while (n--) {
-        printf("in user_test_func while\n");
-        // if(deu_poll_sync(&imu, user_node, &imu_sample) == 0) {
-        //     printf("test:ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
-        //         imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
-        //         imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
-        //     // printf("out user_test_func while\n");
-        // }
-    }
+    // while (n--) {
+    //     printf("in user_test_func while\n");
+    //     // if(deu_poll_sync(&imu, user_node, &imu_sample) == 0) {
+    //     //     printf("test:ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
+    //     //         imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
+    //     //         imu_sample.gyr_x, imu_sample.gyr_y, imu_sample.gyr_z);
+    //     //     // printf("out user_test_func while\n");
+    //     // }
+    // }
     printf("out user_test_func\n");
     return (void *)0;
 }

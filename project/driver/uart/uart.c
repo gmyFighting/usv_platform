@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <termios.h>
 #include <errno.h>
 #include <string.h>
 #include <uart.h>
@@ -20,12 +19,13 @@ static const char TRUE = 0;
  * 入口参数： fd :文件描述符 port :串口号(ttyUSB0,ttymxc1,ttymxc2)
  * 出口参数： 正确返回为0，错误返回为-1
  */
-int uart_open(int fd, char* port)
+int uart_open(int *fd_t, char* port)
 {
     int res;
+    int fd;
     // 返回最小的未被使用的描述符(后续操作都基于该描述符)
-    // O_NOCTTY不把该设备作为终端设备，程序不会成为这个端口的控制终端。
-    // O_NONBLOCK/O_NDELAY非阻塞方式读取，不关心端口另一端状态
+    // O_NOCTTY不把该设备作为终端设备,程序不会成为这个端口的控制终端,任何一个输入,例如键盘中止信号等,都将影响进程。
+    // O_NONBLOCK/O_NDELAY非阻塞方式读取,不关心端口另一端状态
     // flag都是用八进制表示
     // bugs:O_NOCTTY加上flag没变化加上flag没变化,好像和串口是终端有关
     fd = open(port, O_RDWR|O_NONBLOCK);
@@ -46,7 +46,8 @@ int uart_open(int fd, char* port)
         printf("tty is not a terminal device\n");
         return(FALSE);
     }
-    
+
+    *fd_t = fd;
     printf("uart:%s open\n",port);
     return 0;
 }
@@ -59,40 +60,32 @@ void uart_close(int fd)
 /*
  * 名称： UART_Set
  * 功能： 设置串口数据位，停止位和效验位
- * 入口参数： fd 串口文件描述符
- * speed 串口速度
+ * 入口参数: 
+ * fd 文件描述符
+ * speed 串口速度 如B115200
  * flow_ctrl 数据流控制
- * databits 数据位 取值为 7 或者8
- * stopbits 停止位 取值为 1 或者2
- * parity 效验类型 取值为N,E,O,,S
- *出口参数： 正确返回为0，错误返回为-1
+ * databits 数据位 7/8
+ * stopbits 停止位 1/2
+ * parity 效验位 N/E/O/S
+ * 出口参数： 
+ * 正确返回为0，错误返回为-1
  */
-int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity)
-{ 
-    int i;
+int uart_set(int fd, speed_t speed, int flow_ctrl, int databits, int stopbits, char parity)
+{
     // int status;
-    int speed_arr[] = { B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300,
-        B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300
-    };
-    int name_arr[] = { 115200, 38400, 19200, 9600, 4800, 2400, 1200, 300, 115200, 38400,
-        19200, 9600, 4800, 2400, 1200, 300
-    };
     struct termios options;
 
-    /*tcgetattr(fd,&options)得到与fd指向对象的相关参数，并将它们保存于options,该函数,还可以测试配置是否正确，该串口是否可用等。若调用成功，函数返回值为0，若调用失败，函数返回值为1.
-    */
-    if (tcgetattr( fd,&options) != 0) {
-        perror("SetupSerial 1");
+    /*tcgetattr获得终端参数
+     *tcsetattr修改终端参数*/
+    if (tcgetattr(fd, &options) != 0) {
+        fprintf(stderr,"SetupSerial 1\n");
         return(FALSE);
     }
         
-    //设置串口输入波特率和输出波特率
-    for (i= 0; i < sizeof(speed_arr) / sizeof(int); i++) {     
-        if (speed == name_arr[i]) {
-            cfsetispeed(&options, speed_arr[i]);
-            cfsetospeed(&options, speed_arr[i]);
-        }
-    } 
+    /*cfsetispeed设置输入波特率
+     *cfsetospeed设置输出波特率*/
+    cfsetispeed(&options, B921600);
+    cfsetospeed(&options, B921600);
 
 	//修改控制模式，保证程序不会占用串口        
     options.c_cflag |= CLOCAL;
@@ -110,9 +103,9 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
         options.c_cflag |= IXON | IXOFF | IXANY;
     break;
     }
+
     //设置数据位
     options.c_cflag &= ~CSIZE; //屏蔽其他标志位
-
     switch (databits) {
         case 5:
             options.c_cflag |= CS5;
@@ -130,7 +123,8 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
             fprintf(stderr,"Unsupported data size\n");
             return (FALSE);
     }
-     //设置校验位
+
+    //设置校验位
     switch (parity) {
     case 'n':
     case 'N': //无奇偶校验位。
@@ -138,12 +132,12 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
         options.c_iflag &= ~INPCK;
     break;
     case 'o':
-    case 'O': //设置为奇校验
+    case 'O': //奇校验
         options.c_cflag |= (PARODD | PARENB);
         options.c_iflag |= INPCK;
     break;
     case 'e':
-    case 'E': //设置为偶校验
+    case 'E': //偶校验
         options.c_cflag |= PARENB;
         options.c_cflag &= ~PARODD;
         options.c_iflag |= INPCK;
@@ -157,6 +151,7 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
         fprintf(stderr,"Unsupported parity\n");
         return (FALSE);
     }
+
      // 设置停止位
     switch (stopbits) {
     case 1:
@@ -167,8 +162,10 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
     break;
     default:
         fprintf(stderr,"Unsupported stop bits\n");
-    return (FALSE);
+        return (FALSE);
+    break;
     }
+
     //修改输出模式，原始数据输出
     options.c_oflag &= ~OPOST;
     //设置等待时间和最小接收字符
@@ -176,22 +173,24 @@ int uart_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int parity
     options.c_cc[VMIN] = 1; /* 读取字符的最少个数为1 */
 	options.c_lflag &= ~(ICANON | ECHO | ECHOE);
 	
-    //如果发生数据溢出，接收数据，但是不再读取
+    /*TCIFLUSH清除正收到的数据,且不会读出来
+      TCOFLUSH清楚正写入的数据,且不会发送至终端
+      TCIOFLUSH清除所有正在发送的I/O数据*/
     tcflush(fd,TCIFLUSH);
    
-    //激活配置 (将修改后的termios数据设置到串口中）
-    if (tcsetattr(fd,TCSANOW,&options) != 0)
-    {
-        perror("com set error!/n");
+    /* 设置终端
+     * TCSANOW：立刻对值进行修改*/
+    if (tcsetattr(fd, TCSANOW, &options) != 0) {
+        fprintf(stderr,"com set error!/n");
         return (FALSE);
     }
     return (TRUE);
 }
 
-int uart_init(int fd, int speed,int flow_ctrlint ,int databits,int stopbits,char parity)
+int uart_init(int fd, int speed,int flow_ctrl, int databits,int stopbits,char parity)
 {
     //设置串口数据帧格式
-    if (FALSE == uart_set(fd,speed,flow_ctrlint,databits,stopbits,parity)) {         
+    if (FALSE == uart_set(fd,speed,flow_ctrl,databits,stopbits,parity)) {         
         return FALSE;
     } else {
         printf("uart set over\n");
