@@ -1,4 +1,5 @@
 #include "imu040b.h"
+#include <stdio.h>
 
 // 帧头(2)+PAYLOAD+CheckSum(2)
 static enum {
@@ -33,17 +34,21 @@ typedef struct {
     float wx;// (Unit:0.0001deg/s)
     float wy;
     float wz;
-    float ax;// (Unit:0.0001m/s/s)
+    float ax;// 惯导加速度(Unit:0.0001m/s/s)
     float ay;
     float az;
+    float fx;// 比力(Unit:0.0001m/s/s)
+    float fy;
+    float fz;
     short tmp;
-} imu040b_nav_payload_t;// 单字节对齐:33 4字节对齐:36
+} imu040b_nav_payload_t;// 单字节对齐:45 4字节对齐:48
 
 // 用于快速解析协议
 typedef union {
     imu040b_nav_payload_t    imu040b_data;
-    char                     buf_raw[33];
+    char                     buf_raw[45];
 } imu040b_nav_buf_t;
+
 #pragma pack()
 
 static imu040b_nav_buf_t imu040b_nav_buf;
@@ -72,7 +77,12 @@ void publish_msg()
     imu040_sample.wz = (float)(imu040b_nav_buf.imu040b_data.wz)/10000.0;
     imu040_sample.ax = (float)(imu040b_nav_buf.imu040b_data.ax)/10000.0;
     imu040_sample.ay = (float)(imu040b_nav_buf.imu040b_data.ay)/10000.0;
-    imu040_sample.az = (float)(imu040b_nav_buf.imu040b_data.az)/10000.0;    
+    imu040_sample.az = (float)(imu040b_nav_buf.imu040b_data.az)/10000.0; 
+    imu040_sample.fx = (float)(imu040b_nav_buf.imu040b_data.fx)/10000.0;
+    imu040_sample.fy = (float)(imu040b_nav_buf.imu040b_data.fy)/10000.0;
+    imu040_sample.fz = (float)(imu040b_nav_buf.imu040b_data.fz)/10000.0;
+    printf("state=%d\n", imu040_sample.state);  
+    printf("pitch=%f roll=%f yaw=%f\n", imu040_sample.pitch,imu040_sample.roll,imu040_sample.yaw);      
 }
 
 int imu040_parse_char(char ch)
@@ -95,15 +105,15 @@ int imu040_parse_char(char ch)
         }
     break;
         
-    case IMU040_STATE:       
+    case IMU040_STATE:  
         imu040b_nav_buf.buf_raw[payload_index++] = ch;
         _parse_state = IMU040_PAYLOAD;
     break;
         
-    case IMU040_PAYLOAD:
+    case IMU040_PAYLOAD:   
         _checksum(ch);
         imu040b_nav_buf.buf_raw[payload_index++] = ch;
-        if(payload_index == 33) {
+        if(payload_index >= 45) {
             _parse_state = IMU040_IDX;
         }
 	break;   

@@ -12,7 +12,11 @@ struct imu040_frame {
     float ax;
     float ay;
     float az;
+    float fx;
+    float fy;
+    float fz;
 };
+
 
 int imu040_parse_char(char ch);
 
