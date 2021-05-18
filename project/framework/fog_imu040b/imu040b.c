@@ -81,7 +81,6 @@ void publish_msg()
     imu040_sample.fx = (float)(imu040b_nav_buf.imu040b_data.fx)/10000.0;
     imu040_sample.fy = (float)(imu040b_nav_buf.imu040b_data.fy)/10000.0;
     imu040_sample.fz = (float)(imu040b_nav_buf.imu040b_data.fz)/10000.0;
-    printf("state=%d\n", imu040_sample.state);  
     printf("pitch=%f roll=%f yaw=%f\n", imu040_sample.pitch,imu040_sample.roll,imu040_sample.yaw);      
 }
 
@@ -116,7 +115,7 @@ int imu040_parse_char(char ch)
         if(payload_index >= 45) {
             _parse_state = IMU040_IDX;
         }
-	break;   
+    break;   
         
     case IMU040_IDX:
         _parse_state = IMU040_CHECK_SUM;

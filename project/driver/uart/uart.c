@@ -10,8 +10,8 @@
 #include <string.h>
 #include <uart.h>
 
-static const char FALSE = -1;
-static const char TRUE = 0;
+static const int FALSE = -1;
+static const int TRUE = 0;
 
 /*
  * 名称： UART_Open
@@ -204,11 +204,14 @@ int uart_init(int fd, int speed,int flow_ctrl, int databits,int stopbits,char pa
  * 入口参数： fd :文件描述符
  * rcv_buf :接收串口中数据存入rcv_buf缓冲区中
  * data_len :一帧数据的长度
- * 出口参数： 正确返回为0，错误返回为-1
+ * 出口参数： 正确返回为len，错误返回为-1
  */
 int uart_recv(int fd, char *rcv_buf, int data_len)
 {
-    int len,fs_sel;
+    // 判断输入参数正确性
+
+
+    int len = 0,fs_sel = 0;
     fd_set fs_read;
     
     struct timeval time;
@@ -220,12 +223,9 @@ int uart_recv(int fd, char *rcv_buf, int data_len)
     time.tv_usec = 0;
     
     //使用select实现串口的多路通信
-    fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);
-	//printf("fs_sel = %d\n",fs_sel);
+    fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);// 没数据会阻塞
     if(fs_sel) {
-        len = read(fd,rcv_buf,data_len);
-        // printf("have readen!\n");
-        
+        len = read(fd,rcv_buf,data_len);// 返回字节数
         return len;
     } else {
 		printf("select() error!\n");

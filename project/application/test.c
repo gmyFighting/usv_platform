@@ -2,7 +2,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stddef.h>// NULL
-#include <unistd.h>// sleep
+#include <unistd.h>// sleep usleep
 #include "bmi088.h"
 #include "uDEU.h"
 #include "imu040b.h"
@@ -12,12 +12,12 @@ extern struct deu_topic imu;
 
 void* user_test_func(void *arg)
 {
-    char rcv_buf = 0;
+    char rcv_buf[1024] = {0};// 可以换成ringbuf
     printf("in user_test_func\n");
     sleep(1);// 跳转到其他线程
     int n = 200;
     int fd = 0;
-    int res;
+    int res = 0;
     char *imu_name = "/dev/ttyUSB0";
 
     // test DEU
@@ -47,12 +47,15 @@ void* user_test_func(void *arg)
     }
     
     while (1) {
-        res = uart_recv(fd, &rcv_buf, 1);
+        res = uart_recv(fd, &rcv_buf[0], 1024);
         if (res > 0) {
-            imu040_parse_char(rcv_buf);
+            for(int i = 0; i < res; i++) {
+                imu040_parse_char(rcv_buf[i]);
+            }
             // printf("0x%x ",rcv_buf);
         }
-            
+
+        usleep(100000);// 100ms
         // if(deu_poll_sync(&imu, user_node, &imu_sample) == 0) {
         //     printf("test:ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
         //         imu_sample.acc_x, imu_sample.acc_y, imu_sample.acc_z, 
@@ -60,6 +63,7 @@ void* user_test_func(void *arg)
         //     // printf("out user_test_func while\n");
         // }
     }
+
     printf("out user_test_func\n");
     return (void *)0;
 }

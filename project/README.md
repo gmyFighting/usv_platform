@@ -48,6 +48,11 @@
 ### 发现buf:自从加上uart_set以后，开始出现input/output error
 ### 使用uart.c接收imu040 hex测试完成
 
+### 2021/5/18
+### uart_recv返回值改为len
+### 测试usleep
+### imu040b单字节解析改为多字节
+
 ### 编程规范
 只有对外需要使用的函数才作为全局函数使用,其他函数名前应用static修饰
 静态函数名前加_
