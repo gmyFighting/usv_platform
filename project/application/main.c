@@ -24,17 +24,17 @@ int main(int argc, char **argv)
 {
     int res;
     
-    // res = pthread_create(&sensor_collect_thread, NULL, sensor_collect_func, (void*)(&sensor_addr));
-    // if (res) {
-    //     printf("create sensor thread fail\n");
-    //     exit(res);// 退出进程
-    // }
-
-    res = pthread_create(&test_thread, NULL, user_test_func, NULL);
+    res = pthread_create(&sensor_collect_thread, NULL, sensor_collect_func, (void*)(&sensor_addr));
     if (res) {
-        printf("create test thread fail\n");
+        printf("create sensor thread fail\n");
         exit(res);// 退出进程
     }
+
+    // res = pthread_create(&test_thread, NULL, user_test_func, NULL);
+    // if (res) {
+    //     printf("create test thread fail\n");
+    //     exit(res);// 退出进程
+    // }
   
     /* 主线程具有进程行为，return后进程也会结束，进程下的所有线程都会结束
      * 使用pthread_exit后，主线程退出不会引起其创建子线程的退出

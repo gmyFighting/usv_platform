@@ -124,8 +124,8 @@ void* sensor_collect_func(void *arg)
         return (void *)(-1);        
     }
 
-    ts.it_interval.tv_sec = 1; // the spacing time  
-    ts.it_interval.tv_nsec = 0;  
+    ts.it_interval.tv_sec = 0; // the spacing time  
+    ts.it_interval.tv_nsec = 10000000;// 10ms
     ts.it_value.tv_sec = 1;  // the delay time start
     ts.it_value.tv_nsec = 0;
     // 设置完定时器直接启动
@@ -133,7 +133,7 @@ void* sensor_collect_func(void *arg)
         printf("timer_settime failed\n"); 
     } 
 
-    while (n--) {
+    while (1) {
         // printf("in sensor_collect_func while\n");
         // 等待定时器发的信号量
         if (sem_wait(&sensor_sem) == 0) {// 在等待信号量过程中发生阻塞跳转到其他线程

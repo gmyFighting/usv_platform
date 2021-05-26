@@ -84,8 +84,8 @@ int uart_set(int fd, speed_t speed, int flow_ctrl, int databits, int stopbits, c
         
     /*cfsetispeed设置输入波特率
      *cfsetospeed设置输出波特率*/
-    cfsetispeed(&options, B921600);
-    cfsetospeed(&options, B921600);
+    cfsetispeed(&options, speed);
+    cfsetospeed(&options, speed);
 
 	//修改控制模式，保证程序不会占用串口        
     options.c_cflag |= CLOCAL;
@@ -209,28 +209,29 @@ int uart_init(int fd, int speed,int flow_ctrl, int databits,int stopbits,char pa
 int uart_recv(int fd, char *rcv_buf, int data_len)
 {
     // 判断输入参数正确性
+    
 
-
-    int len = 0,fs_sel = 0;
-    fd_set fs_read;
+    int len = 0;
+    // int fs_sel = 0;
+    // fd_set fs_read;
     
-    struct timeval time;
+    // struct timeval time;
     
-    FD_ZERO(&fs_read);
-    FD_SET(fd,&fs_read);
+    // FD_ZERO(&fs_read);
+    // FD_SET(fd,&fs_read);
     
-    time.tv_sec = 5;
-    time.tv_usec = 0;
+    // time.tv_sec = 5;
+    // time.tv_usec = 0;
     
-    //使用select实现串口的多路通信
-    fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);// 没数据会阻塞
-    if(fs_sel) {
+    // // 用于监视文件句柄,没数据会阻塞
+    // fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);
+    // if(fs_sel) {
         len = read(fd,rcv_buf,data_len);// 返回字节数
         return len;
-    } else {
-		printf("select() error!\n");
-        return FALSE;	
-    }    
+    // } else {
+	// 	printf("select() error：no data\n");
+    //     return FALSE;	
+    // }    
 }
 
 /*
