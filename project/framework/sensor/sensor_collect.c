@@ -34,9 +34,9 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
 {
     short mems_buf[6];
     short mag_buf[3];
-    struct bmi088_data imu_sample, imu_sample1;
+    struct bmi088_data imu_sample;
     struct hmc5883_data mag_sample;
-    int res, cnt;
+    int res;
     int sem_val;
 
     if (ins_cnt >= INS_PERIOD) {
@@ -59,12 +59,12 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
         gps_cnt = 0;
     }
 
-    res = deu_poll_sync(top, node, &imu_sample1);
+    // res = deu_poll_sync(top, node, &imu_sample1);
     // printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
     //     imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
     //     imu_sample1.gyr_x, imu_sample1.gyr_y, imu_sample1.gyr_z);
     
-    printf("sens cnt = %d\n", cnt++);
+    // printf("sens cnt = %d\n", cnt++);
     ins_cnt++;
     mag_cnt++;
     gps_cnt++;

@@ -5,12 +5,13 @@ CC 			  := $(CROSS_COMPILE)gcc
 
 INCDIRS := framework/include     \
 			application/include  \
-			driver/include 
+			driver/include       
 
 SRCDIRS := framework/sensor          \
 			framework/uDEU           \
 			framework/ringbuffer     \
 			framework/fog_imu040b	 \
+			framework/tcp            \
 			application              \
 			driver/bmi088            \
 			driver/hmc5883           \
