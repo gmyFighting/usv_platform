@@ -169,7 +169,7 @@ int deu_poll_sync(DeuTopic_t top, DeuNode_t node, void * buf)
     node->renewal = 0;
     pthread_mutex_unlock(&deu_mutex);
 
-    printf("out deu_poll_sync\n");
+    // printf("out deu_poll_sync\n");
     return 0;
 }
 

@@ -36,7 +36,7 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
     short mag_buf[3];
     struct bmi088_data imu_sample, imu_sample1;
     struct hmc5883_data mag_sample;
-    int res;
+    int res, cnt;
     int sem_val;
 
     if (ins_cnt >= INS_PERIOD) {
@@ -60,9 +60,11 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
     }
 
     res = deu_poll_sync(top, node, &imu_sample1);
-    printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
-        imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
-        imu_sample1.gyr_x, imu_sample1.gyr_y, imu_sample1.gyr_z);
+    // printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
+    //     imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
+    //     imu_sample1.gyr_x, imu_sample1.gyr_y, imu_sample1.gyr_z);
+    
+    printf("sens cnt = %d\n", cnt++);
     ins_cnt++;
     mag_cnt++;
     gps_cnt++;
@@ -125,13 +127,13 @@ void* sensor_collect_func(void *arg)
     }
 
     ts.it_interval.tv_sec = 0; // the spacing time  
-    ts.it_interval.tv_nsec = 10000000;// 10ms
-    ts.it_value.tv_sec = 1;  // the delay time start
+    ts.it_interval.tv_nsec = 2000000;// 当前最小支持2ms 
+    ts.it_value.tv_sec = 0;  // the delay time start
     ts.it_value.tv_nsec = 0;
     // 设置完定时器直接启动
     if (timer_settime(timer, 0, &ts, NULL) < 0) {
         printf("timer_settime failed\n"); 
-    } 
+    }
 
     while (1) {
         // printf("in sensor_collect_func while\n");
