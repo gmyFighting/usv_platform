@@ -7,6 +7,7 @@
 #include "sensor_collect.h"
 #include "bmi088.h"
 #include "hmc5883.h"
+#include "ublox.h"
 #include "uDEU.h"
 
 #define INS_PERIOD 1
@@ -14,12 +15,17 @@
 #define GPS_PERIOD 2
 
 static sem_t sensor_sem;// 需要静态全局吗？
-static int fd_mems, fd_mag, fd_gps;
+static int fd_mems, fd_mag;
+static int* fd_serial;		//dvl gps imu040
 static unsigned int ins_cnt = INS_PERIOD;
 static unsigned int mag_cnt = MAG_PERIOD;
 static unsigned int gps_cnt = GPS_PERIOD;
+extern struct gps_frame gps_sample_new;
 
 DEU_DEFINE(imu, sizeof(struct bmi088_data));
+DEU_DEFINE(mag, sizeof(struct hmc5883_data));
+DEU_DEFINE(gps, sizeof(struct gps_frame));
+
 
 void sig_handler(int sig_num)
 {
@@ -30,12 +36,12 @@ void sig_handler(int sig_num)
     } 
 }
 
-void sensor_loop(DeuTopic_t top, DeuNode_t node)
+void sensor_loop(void)
 {
     short mems_buf[6];
     short mag_buf[3];
-    struct bmi088_data imu_sample;
-    struct hmc5883_data mag_sample;
+	struct bmi088_data imu_sample = {0};
+    struct hmc5883_data mag_sample = {0};
     int res;
     int sem_val;
 
@@ -44,27 +50,25 @@ void sensor_loop(DeuTopic_t top, DeuNode_t node)
         read(fd_mems, mems_buf, sizeof(mems_buf));
         bmi088_get_data(mems_buf, &imu_sample);
 
-        deu_publish(top, &imu_sample);
+        deu_publish(&imu, &imu_sample);
     }
 
     if (mag_cnt >= MAG_PERIOD) {
         mag_cnt = 0;
         read(fd_mag, mag_buf, sizeof(mag_buf));
         hmc5883_get_data(mag_buf, &mag_sample);
-        // printf("mx=%f, my=%f, mz=%f\r\n", \
-        //     mag_sample.x, mag_sample.y, mag_sample.z);
+
+		deu_publish(&mag, &mag_sample);		
     }
 
     if (gps_cnt >= GPS_PERIOD) {
         gps_cnt = 0;
+		ublox_analys(*fd_serial);
+
+		deu_publish(&gps, &gps_sample_new);
+		
     }
 
-    // res = deu_poll_sync(top, node, &imu_sample1);
-    // printf("ax=%f, ay=%f, az=%f, gx=%f, gy=%f, gz=%f\r\n", \
-    //     imu_sample1.acc_x, imu_sample1.acc_y, imu_sample1.acc_z, 
-    //     imu_sample1.gyr_x, imu_sample1.gyr_y, imu_sample1.gyr_z);
-    
-    // printf("sens cnt = %d\n", cnt++);
     ins_cnt++;
     mag_cnt++;
     gps_cnt++;
@@ -109,22 +113,42 @@ void* sensor_collect_func(void *arg)
         return NULL;
     }
 
-    // uDEU
-    sem_t imu_sem;
-    DeuNode_t imu_node = NULL;
-    res = deu_advertise(&imu);
-    if (res < 0) {
-        printf("deu_advertise failed\n");
-        return (void *)(-1);
-    }
+	/* 串口初始化 */
+    fd_serial = uart_deviece_init(fd_serial);
+	
+	/*if(-1 == fd_serial){
+		printf("uart_deviece_init fail.\n");
+	}*/
+	
+	/* 创建话题 */
+	/* IMU */
+	res = deu_advertise(&imu);
+    if (!res) {
+       printf("IMU:deu_advertise success.\n");
+        		
+    }else{
+		printf("IMU:deu_advertise failed.\n");
+		return (void *)(-1);
+	}	
+			
+	/* MAG */
+	res = deu_advertise(&mag);
+    if (!res) {
+        printf("MAG:deu_advertise success\n");
+        	
+    }else{
+		printf("MAG:deu_advertise failed.\n");
+		return (void *)(-1);
+	}
 
-    res = sem_init(&imu_sem, 0, 0);
-
-    imu_node = deu_subscribe(&imu, &imu_sem, NULL);
-    if (imu_node == NULL) {
-        printf("deu_subscribe failed\n");
-        return (void *)(-1);        
-    }
+	/* GPS */
+	res = deu_advertise(&gps);
+    if (!res) {
+        printf("GPS:deu_advertise success\n");
+    }else{
+		printf("GPS:deu_advertise failed.\n");
+		return (void *)(-1);
+	}
 
     ts.it_interval.tv_sec = 0; // the spacing time  
     ts.it_interval.tv_nsec = 2000000;// 当前最小支持2ms 
@@ -136,16 +160,11 @@ void* sensor_collect_func(void *arg)
     }
 
     while (1) {
-        // printf("in sensor_collect_func while\n");
-        // 等待定时器发的信号量
         if (sem_wait(&sensor_sem) == 0) {// 在等待信号量过程中发生阻塞跳转到其他线程
-            // printf("in sensor_loop\n");
-            sensor_loop(&imu, imu_node);
-            // printf("out sensor_loop\n");
+            sensor_loop();
         }
-        // printf("out sensor_collect_func while\n");
     }
-    // printf("out sensor_collect_func\n");
+
     close(fd_mems);
     close(fd_mag);
     return (void *)0;

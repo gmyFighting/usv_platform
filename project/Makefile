@@ -12,6 +12,8 @@ SRCDIRS := framework/sensor          \
 			framework/ringbuffer     \
 			framework/fog_imu040b	 \
 			framework/tcp            \
+			framework/log			 \
+			framework/ublox			 \
 			application              \
 			driver/bmi088            \
 			driver/hmc5883           \
