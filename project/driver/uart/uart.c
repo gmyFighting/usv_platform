@@ -8,10 +8,19 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <uart.h>
+#include "uart.h"
+#include "sensor_collect.h"
 
 static const int FALSE = -1;
 static const int TRUE = 0;
+/* 驱动文件地址 */
+static struct uart_devieve_addr uart_addr = {
+    .uart_sensor_num = 3,
+    .ublox = "/dev/ttymxc1",    
+    .dvl = "/dev/ttymxc2",
+    .imu04b = "/dev/***",    
+};
+
 
 /*
  * 名称： UART_Open
@@ -19,10 +28,10 @@ static const int TRUE = 0;
  * 入口参数： fd :文件描述符 port :串口号(ttyUSB0,ttymxc1,ttymxc2)
  * 出口参数： 正确返回为0，错误返回为-1
  */
-int uart_open(int *fd_t, char* port)
+int uart_open(int fd, char* port)
 {
     int res;
-    int fd;
+    //int fd;
     // 返回最小的未被使用的描述符(后续操作都基于该描述符)
     // O_NOCTTY不把该设备作为终端设备,程序不会成为这个端口的控制终端,任何一个输入,例如键盘中止信号等,都将影响进程。
     // O_NONBLOCK/O_NDELAY非阻塞方式读取,不关心端口另一端状态
@@ -47,9 +56,9 @@ int uart_open(int *fd_t, char* port)
         return(FALSE);
     }
 
-    *fd_t = fd;
+    //*fd_t = fd;
     printf("uart:%s open\n",port);
-    return 0;
+    return fd;
 }
 
 void uart_close(int fd)
@@ -212,26 +221,26 @@ int uart_recv(int fd, char *rcv_buf, int data_len)
     
 
     int len = 0;
-    // int fs_sel = 0;
-    // fd_set fs_read;
+    int fs_sel = 0;
+    fd_set fs_read;
     
-    // struct timeval time;
+    struct timeval time;
     
-    // FD_ZERO(&fs_read);
-    // FD_SET(fd,&fs_read);
+    FD_ZERO(&fs_read);
+    FD_SET(fd,&fs_read);
     
-    // time.tv_sec = 5;
-    // time.tv_usec = 0;
+    time.tv_sec = 5;
+    time.tv_usec = 0;
     
-    // // 用于监视文件句柄,没数据会阻塞
-    // fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);
-    // if(fs_sel) {
+    // 用于监视文件句柄,没数据会阻塞
+    fs_sel = select(fd+1,&fs_read,NULL,NULL,&time);
+    if(fs_sel) {
         len = read(fd,rcv_buf,data_len);// 返回字节数
         return len;
-    // } else {
-	// 	printf("select() error：no data\n");
-    //     return FALSE;	
-    // }    
+    } else {
+	printf("select() error：no data\n");
+       return FALSE;	
+     }    
 }
 
 /*
@@ -255,3 +264,41 @@ int uart_send(int fd, char *send_buf,int data_len)
         return FALSE;  
     } 
 }
+
+/*  uart deviece initialization */ 
+int* uart_deviece_init(int *fd)
+{	
+	int res;
+	int *sfd;
+	*sfd = *fd;
+	
+	/* ublox init */
+	*sfd = uart_open(*sfd, uart_addr.ublox);
+
+	res = uart_init(*sfd, B115200, 0, 8, 1, 'N');
+	if(res = FALSE){
+		printf("ublox_uart init failed.\n");
+		return (int*)(-1);
+	}
+
+	/* dvl init */
+	*(sfd + 1) = uart_open(*(sfd + 1), uart_addr.dvl);
+
+	res = uart_init(*(sfd + 1), B9600, 0, 8, 1, 'N');
+	if(res = FALSE){
+		printf("dvl_uart open failed.\n");
+		return (int*)(-1);
+	}
+
+	/* imu040b init */
+	*(sfd + 2) = uart_open(*(sfd + 2), uart_addr.imu04b);
+
+	res = uart_init(*(sfd + 2), B921600, 0, 8, 1, 'E');
+	if(res = FALSE){
+		printf("imu040b_uart open failed.\n");
+		return (int*)(-1);
+	}
+	
+	return *sfd;
+}
+
